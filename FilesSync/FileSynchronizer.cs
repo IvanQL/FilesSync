@@ -8,6 +8,8 @@ internal static class FileSynchronizer
 	public static void Sync(string sourceDirectoryPath, string replicaDirectoryPath)
 	{
 		CopyAndUpdateFiles(sourceDirectoryPath, replicaDirectoryPath);
+		DeleteExtraFiles(sourceDirectoryPath, replicaDirectoryPath);
+		CleanEmptyDirectories(replicaDirectoryPath);
 	}
 
 	private static void CopyAndUpdateFiles(string sourceDirectoryPath, string replicaDirectoryPath)
@@ -28,6 +30,34 @@ internal static class FileSynchronizer
 			{
 				File.Copy(file, destinationFilePath, true);
 				Log.Information("Copied/Updated: {file}", relativeFilePath);
+			}
+		}
+	}
+
+	private static void DeleteExtraFiles(string sourceDirectoryPath, string replicaDirectoryPath)
+	{
+		foreach (var file in Directory.EnumerateFiles(replicaDirectoryPath, "*", SearchOption.AllDirectories))
+		{
+			var relativeFilePath = Path.GetRelativePath(replicaDirectoryPath, file);
+			var sourceFile = Path.Combine(sourceDirectoryPath, relativeFilePath);
+
+			if (!File.Exists(sourceFile))
+			{
+				File.Delete(file);
+				Log.Information("Deleted: {file}", relativeFilePath);
+			}
+		}
+	}
+
+	private static void CleanEmptyDirectories(string replicaDirectoryPath)
+	{
+		var directories = Directory.GetDirectories(replicaDirectoryPath, "*", SearchOption.AllDirectories);
+		foreach (var directoryPath  in directories.Reverse())
+		{
+			if (Directory.GetFileSystemEntries(directoryPath ).Length == 0)
+			{
+				Directory.Delete(directoryPath );
+				Log.Information("Removed empty dir: {dir}", Path.GetRelativePath(replicaDirectoryPath, directoryPath ));
 			}
 		}
 	}
