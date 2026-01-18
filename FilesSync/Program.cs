@@ -53,19 +53,17 @@ internal static class Program
 		{
 			try
 			{
-				SyncFiles(sourceDirectoryPath, replicaDirectoryPath);
+				FileSynchronizer.Sync(sourceDirectoryPath, replicaDirectoryPath);
 			}
 			catch (Exception exception)
 			{
-				Log.Error(exception.Message, "Error during sync");
+				Log.Error(exception, "Error during sync");
 			}
 
 			Thread.Sleep(interval);
 		}
 	}
 
-	static void SyncFiles(string sourceDirectoryPath, string replicaDirectoryPath)
-	{
-	}
+
 }
 
