@@ -4,7 +4,7 @@ using Serilog;
 
 namespace FilesSync;
 
-class Program
+internal static class Program
 {
 	static void Main(string[] args)
 	{
@@ -15,8 +15,8 @@ class Program
 			return;
 		}
 
-		var source = Path.GetFullPath(args[0]);
-		var replica = Path.GetFullPath(args[1]);
+		var sourceDirectoryPath = Path.GetFullPath(args[0]);
+		var replicaDirectoryPath = Path.GetFullPath(args[1]);
 		if (!double.TryParse(args[2], out var intervalSeconds))
 		{
 			Console.WriteLine("Invalid interval. Please enter a value in seconds");
@@ -40,13 +40,32 @@ class Program
 			return;
 		}
 
-		Directory.CreateDirectory(source);
-		Directory.CreateDirectory(replica);
+		Directory.CreateDirectory(sourceDirectoryPath);
+		Directory.CreateDirectory(replicaDirectoryPath);
 		Directory.CreateDirectory(logDirectoryName);
 
 		Log.Logger = new LoggerConfiguration()
 			.WriteTo.Console()
 			.WriteTo.File(logFile, rollingInterval: RollingInterval.Day)
 			.CreateLogger();
+
+		while (true)
+		{
+			try
+			{
+				SyncFiles(sourceDirectoryPath, replicaDirectoryPath);
+			}
+			catch (Exception exception)
+			{
+				Log.Error(exception.Message, "Error during sync");
+			}
+
+			Thread.Sleep(interval);
+		}
+	}
+
+	static void SyncFiles(string sourceDirectoryPath, string replicaDirectoryPath)
+	{
 	}
 }
+
