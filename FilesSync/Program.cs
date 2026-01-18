@@ -57,9 +57,8 @@ internal static class Program
 			}
 			catch (Exception exception)
 			{
-				Log.Error(exception, "Error during sync");
+				Log.Error(exception.Message, "Error during sync");
 			}
-
 			Thread.Sleep(interval);
 		}
 	}

@@ -7,14 +7,14 @@ internal static class FileSynchronizer
 {
 	public static void Sync(string sourceDirectoryPath, string replicaDirectoryPath)
 	{
+		SyncDirectories(sourceDirectoryPath, replicaDirectoryPath);
 		CopyAndUpdateFiles(sourceDirectoryPath, replicaDirectoryPath);
 		DeleteExtraFiles(sourceDirectoryPath, replicaDirectoryPath);
-		CleanEmptyDirectories(replicaDirectoryPath);
 	}
 
 	private static void CopyAndUpdateFiles(string sourceDirectoryPath, string replicaDirectoryPath)
 	{
-		foreach (var file in Directory.EnumerateFiles(sourceDirectoryPath, "*", SearchOption.AllDirectories))
+		foreach (var file in Directory.GetFiles(sourceDirectoryPath, "*", SearchOption.AllDirectories))
 		{
 			var relativeFilePath = Path.GetRelativePath(sourceDirectoryPath, file);
 			var destinationFilePath = Path.Combine(replicaDirectoryPath, relativeFilePath);
@@ -29,14 +29,14 @@ internal static class FileSynchronizer
 			if (!File.Exists(destinationFilePath) || IsDifferent(file, destinationFilePath))
 			{
 				File.Copy(file, destinationFilePath, true);
-				Log.Information("Copied/Updated: {file}", relativeFilePath);
+				Log.Information("File {file} is Copied or Updated", relativeFilePath);
 			}
 		}
 	}
 
 	private static void DeleteExtraFiles(string sourceDirectoryPath, string replicaDirectoryPath)
 	{
-		foreach (var file in Directory.EnumerateFiles(replicaDirectoryPath, "*", SearchOption.AllDirectories))
+		foreach (var file in Directory.GetFiles(replicaDirectoryPath, "*", SearchOption.AllDirectories))
 		{
 			var relativeFilePath = Path.GetRelativePath(replicaDirectoryPath, file);
 			var sourceFile = Path.Combine(sourceDirectoryPath, relativeFilePath);
@@ -44,20 +44,39 @@ internal static class FileSynchronizer
 			if (!File.Exists(sourceFile))
 			{
 				File.Delete(file);
-				Log.Information("Deleted: {file}", relativeFilePath);
+				Log.Information("File: {file} is deleted", relativeFilePath);
 			}
 		}
 	}
 
-	private static void CleanEmptyDirectories(string replicaDirectoryPath)
+	private static void SyncDirectories(string sourceDirectoryPath, string replicaDirectoryPath)
 	{
-		var directories = Directory.GetDirectories(replicaDirectoryPath, "*", SearchOption.AllDirectories);
-		foreach (var directoryPath  in directories.Reverse())
+		CreateMissingDirectories(sourceDirectoryPath, replicaDirectoryPath);
+		RemoveExtraDirectories(sourceDirectoryPath, replicaDirectoryPath);
+	}
+
+	private static void CreateMissingDirectories(string sourceDirectoryPath, string replicaDirectoryPath)
+	{
+		foreach (var sourceDirectory in Directory.GetDirectories(sourceDirectoryPath, "*", SearchOption.AllDirectories))
 		{
-			if (Directory.GetFileSystemEntries(directoryPath ).Length == 0)
+			var relativePath = Path.GetRelativePath(sourceDirectoryPath, sourceDirectory);
+			var destinationDirectory = Path.Combine(replicaDirectoryPath, relativePath);
+			Directory.CreateDirectory(destinationDirectory);
+			Log.Information("Directory: {directory} is created or exists", relativePath);
+		}
+	}
+
+	private static void RemoveExtraDirectories(string sourceDirectoryPath, string replicaDirectoryPath)
+	{
+		foreach (var path in Directory.GetDirectories(replicaDirectoryPath, "*", SearchOption.AllDirectories))
+		{
+			var relative = Path.GetRelativePath(replicaDirectoryPath, path);
+			var sourceDir = Path.Combine(sourceDirectoryPath, relative);
+
+			if (!Directory.Exists(sourceDir))
 			{
-				Directory.Delete(directoryPath );
-				Log.Information("Removed empty dir: {dir}", Path.GetRelativePath(replicaDirectoryPath, directoryPath ));
+				Directory.Delete(path, true);
+				Log.Information("Deleted directory: {directory}", relative);
 			}
 		}
 	}
