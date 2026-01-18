@@ -14,9 +14,9 @@ internal static class FileSynchronizer
 
 	private static void CopyAndUpdateFiles(string sourceDirectoryPath, string replicaDirectoryPath)
 	{
-		foreach (var file in Directory.GetFiles(sourceDirectoryPath, "*", SearchOption.AllDirectories))
+		foreach (var patch in Directory.GetFiles(sourceDirectoryPath, "*", SearchOption.AllDirectories))
 		{
-			var relativeFilePath = Path.GetRelativePath(sourceDirectoryPath, file);
+			var relativeFilePath = Path.GetRelativePath(sourceDirectoryPath, patch);
 			var destinationFilePath = Path.Combine(replicaDirectoryPath, relativeFilePath);
 
 			var destinationDirectory = Path.GetDirectoryName(destinationFilePath);
@@ -26,9 +26,9 @@ internal static class FileSynchronizer
 			}
 			Directory.CreateDirectory(destinationDirectory);
 
-			if (!File.Exists(destinationFilePath) || IsDifferent(file, destinationFilePath))
+			if (!File.Exists(destinationFilePath) || AreFilesDifferent(patch, destinationFilePath))
 			{
-				File.Copy(file, destinationFilePath, true);
+				File.Copy(patch, destinationFilePath, true);
 				Log.Information("File {file} is Copied or Updated", relativeFilePath);
 			}
 		}
@@ -81,7 +81,7 @@ internal static class FileSynchronizer
 		}
 	}
 
-	private static bool IsDifferent(string file1, string file2)
+	private static bool AreFilesDifferent(string file1, string file2)
 	{
 		return GetHash(file1) != GetHash(file2);
 	}
